@@ -70,33 +70,36 @@ try {
 
     $pdo->commit();
 
+
+ error_log("Email: $email");
+    error_log("Temporary Password (hashed): $hashedPassword");
     // ✅ Email functionality is disabled for now.
-    /*
+    
     $resetLink = "https://mvsdeals.online/updatePassword.php?email=" . urlencode($email) . "&token=$resetToken";
 
     $mail = new PHPMailer(true);
     $mail->isSMTP();
-    $mail->Host = 'smtp.gmail.com';
+    $mail->Host = 'mail.mvsdeals.online';
     $mail->SMTPAuth = true;
-    $mail->Username = 'msvdeals.online@gmail.com';
-    $mail->Password = 'your_app_password';
+    $mail->Username = 'support@mvsdeals.online';
+    $mail->Password = 'raj@3245M';
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port = 587;
 
-    $mail->setFrom('msvdeals.online@gmail.com', 'MSV Deals');
+    $mail->setFrom('support@mvsdeals.online', 'MSV Deals');
     $mail->addAddress($email);
     $mail->isHTML(true);
     $mail->Subject = 'Your Account Details';
     $mail->Body = "
-        <h2>Welcome to MSV Deals!</h2>
-        <p>Your account has been created successfully.</p>
-        <p><strong>Temporary Password:</strong> $randomPassword</p>
-        <p>Please click the link below to set your permanent password:</p>
-        <p><a href='$resetLink'>Set Your Password</a></p>
-        <p>This link will expire in 1 hour.</p>
-    ";
+    <h2>Welcome to MSV Deals!</h2>
+    <p>Your account has been created successfully.</p>
+    <p>Please click the button below to set your password:</p>
+    <p><a href='$resetLink' style='display:inline-block;padding:10px 15px;background:#007bff;color:#fff;text-decoration:none;'>Set Your Password</a></p>
+    <p>This link will expire in 1 hour for security purposes.</p>
+";
+
     $mail->send();
-    */
+    
 
     // ✅ Respond with success
     http_response_code(200); // OK
@@ -107,8 +110,11 @@ try {
         'temporary_password' => $randomPassword,
         'note' => 'Password reset link was generated but email sending is currently disabled.'
     ]);
-} catch (Exception $e) {
-    $pdo->rollBack();
+}  catch (Exception $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
     http_response_code(500); // Internal Server Error
     echo json_encode([
         'error' => 'Something went wrong while processing your request.',

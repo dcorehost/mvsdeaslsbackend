@@ -5,11 +5,13 @@ error_reporting(E_ALL);
 require 'db.php';
 require 'vendor/autoload.php';
 
+use Firebase\JWT\JWT; // ✅ ADDED
+use Firebase\JWT\Key;  // ✅ ADDED
 session_start();
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization'); // ✅ ADDED
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -51,17 +53,32 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 try {
     // Check if user exists with the provided email
-    $stmt = $pdo->prepare("SELECT id, password FROM users WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, email , password FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
     if ($user) {
         // Verify password with the stored hashed password
         if (password_verify($password, $user['password'])) {
+            
+            $payload = [
+                '_id' => $user['id'],
+                'email' => $user['email'],
+                // 'phone' => $user['phone'],
+                // 'typeOfUser' => $user['user_type'],
+                // 'employeeId' => $user['employee_id'],
+                'iat' => time(),
+                'exp' => time() + (10 * 60 * 60) // 10 hours
+            ];
+
+            $secretKey = 'mvsdeals.online'; // 🔄 Use a secure env key in production
+            $token = JWT::encode($payload, $secretKey, 'HS256');
+            
             http_response_code(200); // OK
             echo json_encode([
                 'success' => true,
                 'message' => 'Login successful.',
+                                'token' => $token, // ✅ Return the token
                 'user_id' => $user['id'],
                 'email' => $email,
                 'note' => 'Login successful with the temporary password.'
